@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SynShopX — v8 (with Admin Panel)</title>
+  <style>
+    :root{
+      --bg-1:#071212;
+      --bg-2:#031010;
+      --card:#071212;
+      --accent:#00d361;
+      --muted:#9aa0a0;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg-1),var(--bg-2));color:#e9f9ef}
+    header{
+      height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+      backdrop-filter: blur(6px);
+      background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.15));
+      position:sticky;top:0;z-index:30;
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#022;font-weight:800;box-shadow:0 10px 30px rgba(0,211,97,0.06)}
+    .brand h1{margin:0;font-size:16px}
+    nav{display:flex;gap:12px;align-items:center}
+    a.toplink{color:var(--muted);text-decoration:none;font-size:14px}
+    a.toplink:hover{color:var(--accent)}
+    .top-actions{display:flex;gap:8px;align-items:center}
+    .btn{
+      padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);
+      background:transparent;color:#eaf7ee;cursor:pointer;font-size:13px;
+    }
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#00c85b);color:#022;border:none}
+    main{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px);padding:28px}
+    .center-card{width:360px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:26px;box-shadow:0 15px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.02)}
+    .center-card h2{margin:0 0 10px;color:var(--accent)}
+    .inp{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e9f9ef;margin-top:10px}
+    .muted{color:var(--muted);font-size:13px;margin-top:10px}
+    .small{font-size:13px}
+    .links{display:flex;gap:8px;margin-top:12px;justify-content:space-between}
+    /* channels grid */
+    .channels-wrap{width:100%;max-width:1100px;margin:0 auto;display:none}
+    .channels-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;padding:20px}
+    .card-item{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.02);cursor:pointer;transition:transform .18s,box-shadow .18s}
+    .card-item:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(0,211,97,0.06)}
+    .card-icon{font-size:40px;margin-bottom:8px}
+    .card-title{font-size:16px;margin-bottom:6px}
+    .card-desc{color:var(--muted);font-size:13px}
+    footer{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:var(--muted);font-size:13px}
+    /* admin panel */
+    .admin-panel{
+      position:fixed;top:80px;right:18px;width:420px;max-width:calc(100% - 40px);z-index:50;
+      background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+      border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.02);box-shadow:0 20px 60px rgba(0,0,0,0.6);display:none;
+    }
+    .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .admin-bubble{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;color:#fff}
+    .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .form-row{margin-top:12px}
+    input[type=text], input[type=password], input[type=email], textarea{
+      width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6e6e6;outline:none;font-size:14px;
+    }
+    .channels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .channel{padding:12px;border-radius:10px;background:rgba(255,255,255,0.015);cursor:pointer;border:1px solid rgba(255,255,255,0.02)}
+    .stats{margin-top:12px;background:rgba(255,255,255,0.01);padding:10px;border-radius:8px}
+    .muted-2{color:var(--muted);font-size:13px}
+
+    /* maintenance overlay */
+    .maint-overlay{
+      position:fixed;inset:0;background:linear-gradient(180deg, rgba(2,6,6,0.95), rgba(2,6,6,0.97));z-index:1000;
+      display:flex;align-items:center;justify-content:center;padding:20px;color:#dff7e6;
+    }
+    .maint-card{
+      max-width:720px;width:100%;background:rgba(0,0,0,0.35);border-radius:12px;padding:28px;border:1px solid rgba(255,255,255,0.03);
+      box-shadow:0 20px 80px rgba(0,0,0,0.7);text-align:center;
+    }
+    .maint-card h1{margin:0 0 8px;color:var(--accent)}
+    .maint-card p{margin:8px 0;color:var(--muted)}
+    .maint-actions{display:flex;gap:10px;justify-content:center;margin-top:16px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><div class="logo">SX</div><div><h1>SynShopX</h1><div class="muted small">Modern digital shop</div></div></div>
+    <div class="top-actions">
+      <a class="toplink" href="https://discord.gg/yDZXPVQp7Z" target="_blank">Discord</a>
+      <button id="adminToggle" class="btn">Admin</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Login/Register center card (shown by default) -->
+    <section id="authSection" class="center-card" aria-live="polite">
+      <h2>Welcome — please sign in</h2>
+      <input id="email" class="inp" type="email" placeholder="Email address" />
+      <input id="password" class="inp" type="password" placeholder="Password" />
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button id="loginBtn" class="btn primary" style="flex:1">Login</button>
+        <button id="showRegBtn" class="btn" style="flex:1">Register</button>
+      </div>
+      <div class="muted small" style="margin-top:12px">We only accept valid emails. This demo stores data locally in your browser.</div>
+    </section>
+
+    <!-- Channels area (hidden until login) -->
+    <section id="channelsSection" class="channels-wrap" aria-hidden="true">
+      <div style="max-width:1100px;margin:14px auto 0;padding:0 20px">
+        <h2 style="color:var(--accent);margin:6px 0">Categories</h2>
+        <div class="muted small">Click a category to open the corresponding Discord channel.</div>
+      </div>
+      <div class="channels-grid" id="channelsGrid">
+        <!-- cards inserted by JS -->
+      </div>
+    </section>
+
+    <!-- Admin panel -->
+    <aside id="adminPanel" class="admin-panel" role="region" aria-label="Admin panel">
+      <div class="panel-head">
+        <h3 style="margin:0;color:var(--accent)">Admin</h3>
+        <div class="admin-bubble" id="adminWho">Not signed in</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="muted-2">Controls</div>
+        <div class="controls">
+          <button id="takeOfflineBtn" class="btn">Take site offline (global)</button>
+          <button id="bringOnlineBtn" class="btn" style="display:none">Bring site online</button>
+          <button id="closeLocalBtn" class="btn">Take site offline (local)</button>
+          <button id="forceLogoutBtn" class="btn">Force logout (local)</button>
+          <button id="delUsersBtn" class="btn">Delete all users (local)</button>
+          <button id="toggleBannerBtn" class="btn">Toggle maintenance banner</button>
+          <button id="exportUsersBtn" class="btn">Export users</button>
+          <button id="importUsersBtn" class="btn">Import users</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="muted-2">Add new Admin</div>
+        <div class="form-row"><input id="newAdminEmail" type="email" placeholder="admin@example.com" /></div>
+        <div class="form-row"><input id="newAdminPass" type="password" placeholder="password for admin" /></div>
+        <div style="margin-top:8px"><button id="addAdminBtn" class="btn primary">Add Admin</button></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="muted-2">Channels</div>
+        <div class="channels">
+          <div class="channel" data-url="https://discord.com/channels/1421202806643359906/1421204478396465313">Fortnite Accounts</div>
+          <div class="channel" data-url="https://discord.com/channels/1421202806643359906/1421204569739890779">Buy Members</div>
+          <div class="channel" data-url="https://discord.com/channels/1421202806643359906/1421250017599029249">Learn Hacking</div>
+          <div class="channel" id="comingSoon">Cooming Soon</div>
+        </div>
+      </div>
+
+      <div class="stats" id="adminStats">
+        <div><strong id="onlineCount">0</strong> currently on this device</div>
+        <div style="margin-top:6px"><strong id="totalCount">0</strong> total different emails (this device)</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="muted-2">Registered Emails (this device)</div>
+        <table style="width:100%;margin-top:8px;border-collapse:collapse">
+          <thead style="color:var(--muted)"><tr><th style="text-align:left">Email</th><th style="text-align:left">Registered At</th></tr></thead>
+          <tbody id="registeredList"></tbody>
+        </table>
+      </div>
+    </aside>
+
+  </main>
+
+  <footer>SynShopX © 2025 — Invite: discord.gg/yDZXPVQp7Z</footer>
+
+<script>
+/* v8 - admin panel integrated
+   - Local-only storage in localStorage
+   - Pre-seeded admin: shamalahmaf402@gmail.com / 6516511reslan
+   - Added: local maintenance enforcement (syn_v8_site_closed) that blocks non-admins immediately
+*/
+
+const CHANNELS = [
+  {icon:'🕹️', title:'Fortnite Accounts', desc:'Discord channel with Fortnite accounts', url:'https://discord.com/channels/1421202806643359906/1421204478396465313'},
+  {icon:'👥', title:'Buy Members', desc:'Buy Members channel', url:'https://discord.com/channels/1421202806643359906/1421204569739890779'},
+  {icon:'💻', title:'Learn Hacking', desc:'Learn hacking resources', url:'https://discord.com/channels/1421202806643359906/1421250017599029249'},
+  {icon:'⏳', title:'Coming soon', desc:'Get info in Discord', url:null}
+];
+
+const LS_USERS='syn_v8_users', LS_SESSIONS='syn_v8_sessions', LS_VIS='syn_v8_vis', LS_CUR='syn_v8_current', LS_GLOBAL='syn_v8_global';
+const LS_LOCAL_CLOSED = 'syn_v8_site_closed'; // local close flag
+
+function loadUsers(){ try{return JSON.parse(localStorage.getItem(LS_USERS)||'{}')}catch(e){return{}} }
+function saveUsers(u){ localStorage.setItem(LS_USERS, JSON.stringify(u)); }
+function loadSessions(){ try{return JSON.parse(localStorage.getItem(LS_SESSIONS)||'{}')}catch(e){return{}} }
+function saveSessions(s){ localStorage.setItem(LS_SESSIONS, JSON.stringify(s)); }
+function touchSession(email){ const s=loadSessions(); s[email]=Date.now(); saveSessions(s); }
+function recordVisit(email){ const arr=JSON.parse(localStorage.getItem(LS_VIS)||'[]'); if(!arr.includes(email)) arr.push(email); localStorage.setItem(LS_VIS, JSON.stringify(arr)); }
+
+async function sha256Hex(str){ const enc=new TextEncoder(); const data=enc.encode(str); const h=await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+
+// seed admin if missing
+(async function seed(){
+  const users = loadUsers();
+  if(!users['shamalahmaf402@gmail.com']){
+    users['shamalahmaf402@gmail.com'] = { pwdHash: await sha256Hex('6516511reslan'), isAdmin:true, createdAt: Date.now() };
+    saveUsers(users);
+  }
+  refreshAdminUI();
+})();
+
+function renderChannels(){
+  const grid = document.getElementById('channelsGrid');
+  grid.innerHTML = '';
+  CHANNELS.forEach(ch=>{
+    const card=document.createElement('div');
+    card.className='card-item';
+    card.innerHTML = `<div class="card-icon">${ch.icon}</div><div class="card-title">${ch.title}</div><div class="card-desc">${ch.desc}</div>`;
+    card.addEventListener('click', ()=> {
+      if(ch.url) window.open(ch.url,'_blank'); else alert('Get info in Discord: https://discord.gg/yDZXPVQp7Z');
+    });
+    grid.appendChild(card);
+  });
+}
+
+// UI references
+const authSection = document.getElementById('authSection');
+const channelsSection = document.getElementById('channelsSection');
+const adminPanel = document.getElementById('adminPanel');
+const adminToggle = document.getElementById('adminToggle');
+
+// basic email validator
+function isValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+// ----- Maintenance enforcement (local) -----
+// If local close flag is set and current user is NOT admin, show full-screen maintenance overlay.
+function createMaintenanceOverlay(){
+  // if overlay already present, do nothing
+  if(document.getElementById('maintOverlay')) return;
+  const ov = document.createElement('div');
+  ov.id = 'maintOverlay';
+  ov.className = 'maint-overlay';
+  ov.innerHTML = `<div class="maint-card">
+    <h1>Wartung — vorübergehend offline</h1>
+    <p>Diese Installation ist derzeit lokal deaktiviert. Bitte besuche unseren Discord für weitere Informationen.</p>
+    <div class="maint-actions">
+      <button id="maintDiscordBtn" class="btn primary">Discord</button>
+      <button id="maintRefreshBtn" class="btn">Seite neu laden</button>
+    </div>
+    <p style="margin-top:12px;color:var(--muted);font-size:13px">Admins können sich anmelden, um die Sperre zu entfernen.</p>
+  </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('maintDiscordBtn').addEventListener('click', ()=> window.open('https://discord.gg/yDZXPVQp7Z', '_blank'));
+  document.getElementById('maintRefreshBtn').addEventListener('click', ()=> location.reload());
+}
+
+function removeMaintenanceOverlay(){
+  const ov = document.getElementById('maintOverlay');
+  if(ov) ov.remove();
+}
+
+function enforceLocalClose(){
+  const closed = localStorage.getItem(LS_LOCAL_CLOSED) === '1';
+  const cur = localStorage.getItem(LS_CUR);
+  const users = loadUsers();
+  const isAdmin = cur && users[cur] && users[cur].isAdmin;
+  if(closed && !isAdmin){
+    // hide main content sections / prevent interaction
+    authSection.style.display = 'none';
+    channelsSection.style.display = 'none';
+    adminPanel.style.display = 'none';
+    createMaintenanceOverlay();
+  } else {
+    // normal behavior
+    removeMaintenanceOverlay();
+    // if logged in, show channels; else show auth
+    if(localStorage.getItem(LS_CUR)){
+      showChannels();
+    } else {
+      authSection.style.display = 'block';
+      channelsSection.style.display = 'none';
+    }
+    // admins may still open adminPanel via toggle
+  }
+}
+// -------------------------------------------
+
+// login/register flow
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const pass = document.getElementById('password').value;
+  if(!isValidEmail(email)){ alert('Enter a valid email'); return; }
+  if(pass.length < 6){ alert('Password too short'); return; }
+  const users = loadUsers();
+  if(!users[email]){ alert('No user; please register'); return; }
+  const h = await sha256Hex(pass);
+  if(h !== users[email].pwdHash){ alert('Wrong password'); return; }
+  // set session
+  localStorage.setItem(LS_CUR, email);
+  touchSession(email);
+  recordVisit(email);
+  // enforce local close after sign-in (admin may bypass)
+  enforceLocalClose();
+  showChannels();
+});
+
+document.getElementById('showRegBtn').addEventListener('click', ()=>{
+  authSection.innerHTML = `<h2>Create account</h2>
+      <input id="regEmail" class="inp" type="email" placeholder="Email address" />
+      <input id="regPass" class="inp" type="password" placeholder="Password (min 6)" />
+      <input id="regPass2" class="inp" type="password" placeholder="Confirm password" />
+      <div style="display:flex;gap:10px;margin-top:12px"><button id="regCreate" class="btn primary" style="flex:1">Create</button><button id="regBack" class="btn" style="flex:1">Back</button></div>
+      <div class="muted small" style="margin-top:12px">Accounts are stored locally in your browser for this demo.</div>`;
+  document.getElementById('regBack').addEventListener('click', ()=> location.reload());
+  document.getElementById('regCreate').addEventListener('click', async ()=>{
+    const em = document.getElementById('regEmail').value.trim().toLowerCase();
+    const p1 = document.getElementById('regPass').value;
+    const p2 = document.getElementById('regPass2').value;
+    if(!isValidEmail(em)){ alert('Enter valid email'); return; }
+    if(p1.length < 6){ alert('Password too short'); return; }
+    if(p1 !== p2){ alert('Passwords do not match'); return; }
+    const users = loadUsers();
+    const h = await sha256Hex(p1);
+    users[em] = { pwdHash: h, isAdmin:false, createdAt: Date.now() };
+    saveUsers(users);
+    localStorage.setItem(LS_CUR, em);
+    touchSession(em);
+    recordVisit(em);
+    // enforce local close after register
+    enforceLocalClose();
+    showChannels();
+  });
+});
+
+function showChannels(){
+  renderChannels();
+  authSection.style.display='none';
+  channelsSection.style.display='block';
+  channelsSection.setAttribute('aria-hidden','false');
+  refreshAdminUI();
+}
+
+// admin toggle behavior
+adminToggle.addEventListener('click', ()=>{
+  const cur = localStorage.getItem(LS_CUR);
+  const users = loadUsers();
+  if(!cur || !users[cur] || !users[cur].isAdmin){
+    openAdminLoginModal();
+    return;
+  }
+  // toggle panel
+  if(adminPanel.style.display === 'none' || adminPanel.style.display === '') openAdminPanel();
+  else closeAdminPanel();
+});
+
+function openAdminPanel(){
+  adminPanel.style.display = 'block';
+  adminToggle.classList.add('active');
+  refreshAdminUI();
+  adminPanel.scrollIntoView({behavior:'smooth', block:'center'});
+}
+function closeAdminPanel(){
+  adminPanel.style.display = 'none';
+  adminToggle.classList.remove('active');
+}
+
+// admin login modal
+function openAdminLoginModal(){
+  const root = document.createElement('div');
+  root.style.position='fixed'; root.style.inset='0'; root.style.background='rgba(0,0,0,0.6)'; root.style.zIndex='80'; root.style.display='flex'; root.style.alignItems='center'; root.style.justifyContent='center';
+  const box = document.createElement('div');
+  box.style.width='420px'; box.style.background='rgba(10,10,10,0.95)'; box.style.padding='18px'; box.style.borderRadius='10px';
+  box.innerHTML = `<h3 style="color:var(--accent);margin:0 0 8px">Admin Login</h3>
+    <div style="margin-top:8px"><input id="modalAdminEmail" placeholder="admin email" style="width:100%;padding:10px;border-radius:8px"/></div>
+    <div style="margin-top:8px"><input id="modalAdminPass" type="password" placeholder="password" style="width:100%;padding:10px;border-radius:8px"/></div>
+    <div style="text-align:right;margin-top:10px"><button id="modalAdminOk" class="btn primary">Login</button></div>`;
+  root.appendChild(box); document.body.appendChild(root);
+  box.querySelector('#modalAdminOk').addEventListener('click', async ()=>{
+    const em = box.querySelector('#modalAdminEmail').value.trim().toLowerCase();
+    const pw = box.querySelector('#modalAdminPass').value;
+    const users = loadUsers();
+    if(!users[em] || !users[em].isAdmin){ alert('Not an admin'); return; }
+    const h = await sha256Hex(pw);
+    if(h !== users[em].pwdHash){ alert('Wrong password'); return; }
+    localStorage.setItem(LS_CUR, em);
+    touchSession(em);
+    document.body.removeChild(root);
+    openAdminPanel();
+    // if admin logged in while site was locally closed, this will remove overlay (admins bypass)
+    enforceLocalClose();
+  });
+}
+
+// admin UI functions
+function refreshAdminUI(){
+  const cur = localStorage.getItem(LS_CUR);
+  const users = loadUsers();
+  document.getElementById('adminWho').textContent = cur ? (cur + (users[cur] && users[cur].isAdmin ? ' (admin)' : '')) : 'Not signed in';
+  // counts
+  const vis = JSON.parse(localStorage.getItem(LS_VIS)||'[]').length;
+  document.getElementById('totalCount').textContent = vis;
+  const sessions = loadSessions(); const now = Date.now(); let online = 0; Object.values(sessions).forEach(ts=>{ if(now - ts < 5*60*1000) online++; });
+  document.getElementById('onlineCount').textContent = online;
+  // registered list
+  const tbody = document.getElementById('registeredList'); tbody.innerHTML = '';
+  const uobj = loadUsers();
+  Object.keys(uobj).forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="padding:6px 0">${e}</td><td style="padding:6px 0">${uobj[e].createdAt?new Date(uobj[e].createdAt).toLocaleString():'-'}</td>`;
+    tbody.appendChild(tr);
+  });
+  // global token UI
+  const g = localStorage.getItem(LS_GLOBAL);
+  if(g){ document.getElementById('bringOnlineBtn').style.display='inline-block'; document.getElementById('takeOfflineBtn').style.display='none'; }
+  else { document.getElementById('bringOnlineBtn').style.display='none'; document.getElementById('takeOfflineBtn').style.display='inline-block'; }
+
+  // reflect local-close button text
+  if(localStorage.getItem(LS_LOCAL_CLOSED) === '1'){
+    document.getElementById('closeLocalBtn').textContent = 'Local closed (active)';
+  } else {
+    document.getElementById('closeLocalBtn').textContent = 'Take site offline (local)';
+  }
+}
+
+// admin controls (local actions)
+document.getElementById('closeLocalBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  const closed = localStorage.getItem(LS_LOCAL_CLOSED) === '1';
+  if(!closed){
+    localStorage.setItem(LS_LOCAL_CLOSED,'1');
+    alert('Site closed locally on this device.');
+  } else {
+    // toggle back
+    localStorage.removeItem(LS_LOCAL_CLOSED);
+    alert('Local site closure removed on this device.');
+  }
+  refreshAdminUI();
+  enforceLocalClose();
+});
+
+document.getElementById('forceLogoutBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  localStorage.removeItem(LS_CUR);
+  localStorage.removeItem(LS_SESSIONS);
+  alert('Forced logout (local). Reloading page.');
+  location.reload();
+});
+
+document.getElementById('delUsersBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  if(!confirm('Delete ALL users locally?')) return;
+  localStorage.removeItem(LS_USERS);
+  alert('All users removed locally.');
+  refreshAdminUI();
+});
+
+document.getElementById('toggleBannerBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  const m = localStorage.getItem('syn_v8_maint') === '1';
+  if(m){ localStorage.removeItem('syn_v8_maint'); alert('Maintenance banner off'); } else { localStorage.setItem('syn_v8_maint','1'); alert('Maintenance banner on'); }
+  refreshAdminUI();
+});
+
+// export/import users
+document.getElementById('exportUsersBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  const data = localStorage.getItem(LS_USERS) || '{}';
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='synshopx_users_export.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  alert('Users exported.');
+});
+document.getElementById('importUsersBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
+  inp.addEventListener('change', (ev)=>{
+    const f = ev.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload = e => { try{ const obj = JSON.parse(e.target.result); const users = loadUsers(); Object.keys(obj).forEach(k=> users[k]=obj[k]); saveUsers(users); alert('Imported'); refreshAdminUI(); } catch(err){ alert('Invalid file'); } };
+    r.readAsText(f);
+  });
+  inp.click();
+});
+
+// add admin
+document.getElementById('addAdminBtn').addEventListener('click', async ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  const email = document.getElementById('newAdminEmail').value.trim().toLowerCase();
+  const pw = document.getElementById('newAdminPass').value;
+  if(!isValidEmail(email)){ alert('Invalid email'); return; }
+  if(pw.length < 6){ alert('Password too short'); return; }
+  const users = loadUsers();
+  users[email] = { pwdHash: await sha256Hex(pw), isAdmin:true, createdAt: Date.now() };
+  saveUsers(users);
+  alert('Admin added locally.');
+  document.getElementById('newAdminEmail').value=''; document.getElementById('newAdminPass').value='';
+  refreshAdminUI();
+});
+
+// global offline token (generate and download)
+document.getElementById('takeOfflineBtn').addEventListener('click', async ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  const cur = localStorage.getItem(LS_CUR);
+  const token = { action:'global_offline', by:cur, at:Date.now() };
+  const sig = await sha256Hex(JSON.stringify(token) + '::synshopx-signature');
+  const payload = { token, sig };
+  localStorage.setItem(LS_GLOBAL, JSON.stringify(payload));
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='synshopx_global_offline_token.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  alert('Global-offline token created and downloaded.');
+  refreshAdminUI();
+});
+document.getElementById('bringOnlineBtn').addEventListener('click', ()=>{
+  if(!isAdminCurrent()){ alert('Admin only'); return; }
+  localStorage.removeItem(LS_GLOBAL);
+  alert('Global offline cleared on this device. (Other devices must import token to update their state)');
+  refreshAdminUI();
+});
+
+// helper: check admin
+function isAdminCurrent(){ const cur=localStorage.getItem(LS_CUR); if(!cur) return false; const users=loadUsers(); return users[cur] && users[cur].isAdmin; }
+
+// admin channels click inside panel
+document.querySelectorAll('.admin-panel .channel, .channels .channel').forEach(()=>{}); // noop to satisfy linter
+
+// channels in admin panel clickable
+document.getElementById('adminPanel').addEventListener('click', (e)=>{
+  const ch = e.target.closest('.channel');
+  if(!ch) return;
+  if(ch.id === 'comingSoon'){ alert('Get info in Discord: https://discord.gg/yDZXPVQp7Z'); return; }
+  const url = ch.dataset.url;
+  if(url) window.open(url, '_blank');
+});
+
+// on load: restore session or show login
+window.addEventListener('load', ()=>{
+  // If device in global-offline and current user isn't admin, warn (existing behavior)
+  if(localStorage.getItem(LS_CUR) && localStorage.getItem(LS_GLOBAL) && !isAdminCurrent()){
+    alert('This device is in global-offline mode. Admins can clear it in the admin panel.');
+  }
+  // enforce local-close BEFORE showing normal UI
+  enforceLocalClose();
+
+  // if logged in and not blocked, show channels directly
+  if(localStorage.getItem(LS_CUR) && localStorage.getItem(LS_LOCAL_CLOSED) !== '1'){
+    showChannels();
+  }
+  // refresh periodically
+  setInterval(()=>{ const cur=localStorage.getItem(LS_CUR); if(cur) touchSession(cur); refreshAdminUI(); }, 15000);
+});
+</script>
+</body>
+</html>
